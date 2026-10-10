@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FT-Test</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FT-Test">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1f3a34">
+<style>
+  :root {
+    --bg: #f4f1ea; --karte: #ffffff; --text: #1d1d1b; --leise: #6b6a65;
+    --akzent: #1f3a34; --akzent-text: #f4f1ea; --gut: #2e7d4f; --schlecht: #b3402f; --linie: #ddd8cc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141816; --karte: #1d2320; --text: #ecebe6; --leise: #9a9c96;
+      --akzent: #8fc1a9; --akzent-text: #10221c; --gut: #6fcf97; --schlecht: #ef8a78; --linie: #2e3632;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 24px);
+  }
+  h1 { font-size: 1.3rem; margin: 4px 0 2px; }
+  .unter { color: var(--leise); margin: 0 0 16px; font-size: .9rem; }
+  section { background: var(--karte); border: 1px solid var(--linie); border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+  h2 { font-size: 1rem; margin: 0 0 10px; }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; font-size: .92rem; }
+  dt { color: var(--leise); }
+  dd { margin: 0; font-weight: 600; word-break: break-word; }
+  .ja { color: var(--gut); } .nein { color: var(--schlecht); }
+  button, .knopf {
+    font: inherit; font-weight: 600; border: 0; border-radius: 12px; padding: 14px 16px;
+    background: var(--akzent); color: var(--akzent-text); min-height: 48px; cursor: pointer; display: inline-block; text-align: center;
+  }
+  button.zweit, .knopf.zweit { background: transparent; color: var(--text); border: 1px solid var(--linie); }
+  .reihe { display: flex; gap: 8px; flex-wrap: wrap; }
+  .reihe > * { flex: 1 1 140px; }
+  input[type=text] {
+    font: inherit; width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--linie);
+    background: var(--bg); color: var(--text); margin-bottom: 8px;
+  }
+  ul { list-style: none; padding: 0; margin: 10px 0 0; font-size: .92rem; }
+  li { padding: 6px 0; border-top: 1px solid var(--linie); }
+  li small { color: var(--leise); display: block; }
+  .uhr { font-size: 2.4rem; font-variant-numeric: tabular-nums; font-weight: 700; text-align: center; margin: 4px 0 10px; }
+  .hinweis { font-size: .85rem; color: var(--leise); margin: 8px 0 0; }
+  #meldung { position: fixed; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom) + 16px);
+    background: var(--text); color: var(--bg); padding: 12px 14px; border-radius: 12px; display: none; }
+  input[type=file] { display: none; }
+</style>
+</head>
+<body>
+<h1>Technik-Test</h1>
+<p class="unter">Fitness-Tagebuch · prüft Speicher, Offline-Betrieb und Export auf dem iPhone</p>
+
+<section>
+  <h2>Status</h2>
+  <dl>
+    <dt>Als App gestartet</dt><dd id="s-app">…</dd>
+    <dt>Browser</dt><dd id="s-browser">…</dd>
+    <dt>Speicher dauerhaft</dt><dd id="s-persist">…</dd>
+    <dt>Speicher belegt</dt><dd id="s-belegt">…</dd>
+    <dt>Offline bereit</dt><dd id="s-offline">…</dd>
+    <dt>Erster Start</dt><dd id="s-erster">…</dd>
+    <dt>Letzter Start davor</dt><dd id="s-letzter">…</dd>
+    <dt>Starts gesamt</dt><dd id="s-starts">…</dd>
+    <dt>Einträge</dt><dd id="s-eintraege">…</dd>
+  </dl>
+  <p class="hinweis" id="s-luecke"></p>
+  <div class="reihe" style="margin-top:12px">
+    <button class="zweit" id="b-persist">Dauerhaft anfragen</button>
+    <button class="zweit" id="b-status">Status kopieren</button>
+  </div>
+</section>
+
+<section>
+  <h2>Eintrag speichern</h2>
+  <input type="text" id="e-text" placeholder="z. B. 3 × 10 Push-ups" autocomplete="off">
+  <button id="b-speichern" style="width:100%">Speichern</button>
+  <ul id="liste"></ul>
+</section>
+
+<section>
+  <h2>Stoppuhr</h2>
+  <div class="uhr" id="uhr">0:00</div>
+  <div class="reihe">
+    <button id="b-start">Start</button>
+    <button class="zweit" id="b-stopp">Fertig</button>
+  </div>
+  <p class="hinweis">Starten, Bildschirm sperren, App schließen, wieder öffnen: Die Zeit muss weiterlaufen.</p>
+</section>
+
+<section>
+  <h2>Sicherung</h2>
+  <div class="reihe">
+    <button id="b-teilen">Exportieren (Teilen)</button>
+    <button class="zweit" id="b-laden">Herunterladen</button>
+    <label class="knopf zweit" for="f-import">Importieren</label>
+  </div>
+  <input type="file" id="f-import" accept="application/json,.json">
+  <p class="hinweis" id="s-export">Noch kein Export.</p>
+</section>
+
+<div id="meldung"></div>
+
+<script>
+"use strict";
+const DB_NAME = "ft-test", DB_VERSION = 1;
+let db;
+
+function oeffneDb() {
+  return new Promise((ok, fehler) => {
+    const r = indexedDB.open(DB_NAME, DB_VERSION);
+    r.onupgradeneeded = () => {
+      const d = r.result;
+      if (!d.objectStoreNames.contains("eintraege")) d.createObjectStore("eintraege", { keyPath: "id" });
+      if (!d.objectStoreNames.contains("meta")) d.createObjectStore("meta", { keyPath: "schluessel" });
+    };
+    r.onsuccess = () => ok(r.result);
+    r.onerror = () => fehler(r.error);
+  });
+}
+function tx(store, modus, fn) {
+  return new Promise((ok, fehler) => {
+    const t = db.transaction(store, modus);
+    const ergebnis = fn(t.objectStore(store));
+    t.oncomplete = () => ok(ergebnis && "result" in ergebnis ? ergebnis.result : undefined);
+    t.onerror = () => fehler(t.error);
+  });
+}
+const alle = (store) => tx(store, "readonly", (s) => s.getAll());
+const holeMeta = async (k) => { const m = await tx("meta", "readonly", (s) => s.get(k)); return m ? m.wert : undefined; };
+const setzeMeta = (k, wert) => tx("meta", "readwrite", (s) => s.put({ schluessel: k, wert }));
+
+const $ = (id) => document.getElementById(id);
+const fmt = (iso) => iso ? new Date(iso).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" }) : "–";
+const neueId = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now() + "-" + Math.random().toString(16).slice(2));
+function jaNein(el, wert, text) { el.textContent = text ?? (wert ? "ja" : "nein"); el.className = wert ? "ja" : "nein"; }
+function melde(text) {
+  const m = $("meldung"); m.textContent = text; m.style.display = "block";
+  clearTimeout(melde.t); melde.t = setTimeout(() => (m.style.display = "none"), 2600);
+}
+
+function browserName() {
+  const ua = navigator.userAgent;
+  if (/FxiOS/.test(ua)) return "Firefox (iOS)";
+  if (/CriOS/.test(ua)) return "Chrome (iOS)";
+  if (/EdgiOS/.test(ua)) return "Edge (iOS)";
+  if (/iPhone|iPad/.test(ua)) return "Safari (iOS)";
+  if (/Firefox/.test(ua)) return "Firefox";
+  if (/Edg\//.test(ua)) return "Edge";
+  if (/Chrome/.test(ua)) return "Chrome";
+  return "anderer";
+}
+const alsApp = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+
+async function zeigeStatus() {
+  jaNein($("s-app"), alsApp());
+  $("s-browser").textContent = browserName();
+  if (navigator.storage && navigator.storage.persisted) {
+    jaNein($("s-persist"), await navigator.storage.persisted());
+  } else { $("s-persist").textContent = "nicht unterstützt"; }
+  if (navigator.storage && navigator.storage.estimate) {
+    const e = await navigator.storage.estimate();
+    $("s-belegt").textContent = ((e.usage || 0) / 1024).toFixed(0) + " KB";
+  } else { $("s-belegt").textContent = "unbekannt"; }
+  const swAktiv = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
+  jaNein($("s-offline"), swAktiv, swAktiv ? "ja" : "noch nicht (einmal neu laden)");
+  $("s-erster").textContent = fmt(await holeMeta("ersterStart"));
+  $("s-letzter").textContent = fmt(await holeMeta("vorherigerStart"));
+  $("s-starts").textContent = (await holeMeta("starts")) || 0;
+  const eintraege = await alle("eintraege");
+  $("s-eintraege").textContent = eintraege.length;
+  const export_ = await holeMeta("letzterExport");
+  $("s-export").textContent = export_ ? "Letzter Export: " + fmt(export_) : "Noch kein Export.";
+  // Abgleich: Wenn localStorage einen älteren ersten Start kennt als IndexedDB, wurde IndexedDB gelöscht.
+  try {
+    const ls = localStorage.getItem("ft-ersterStart");
+    const idb = await holeMeta("ersterStart");
+    if (ls && idb && ls !== idb) $("s-luecke").textContent = "Achtung: Die Datenbank ist jünger als der erste Start laut Zweitspeicher (" + fmt(ls) + "). Daten wurden vermutlich gelöscht.";
+  } catch (_) {}
+}
+
+async function zeigeListe() {
+  const eintraege = (await alle("eintraege")).sort((a, b) => b.erstellt_am.localeCompare(a.erstellt_am));
+  const ul = $("liste"); ul.innerHTML = "";
+  for (const e of eintraege.slice(0, 20)) {
+    const li = document.createElement("li");
+    li.textContent = e.text;
+    const s = document.createElement("small"); s.textContent = fmt(e.erstellt_am);
+    li.appendChild(s); ul.appendChild(li);
+  }
+}
+
+async function zaehleStart() {
+  const jetzt = new Date().toISOString();
+  if (!(await holeMeta("ersterStart"))) await setzeMeta("ersterStart", jetzt);
+  await setzeMeta("vorherigerStart", (await holeMeta("aktuellerStart")) || null);
+  await setzeMeta("aktuellerStart", jetzt);
+  await setzeMeta("starts", ((await holeMeta("starts")) || 0) + 1);
+  try { if (!localStorage.getItem("ft-ersterStart")) localStorage.setItem("ft-ersterStart", await holeMeta("ersterStart")); } catch (_) {}
+}
+
+// Stoppuhr: speichert nur den Startzeitpunkt, die Anzeige rechnet ab da.
+let uhrTimer;
+async function zeigeUhr() {
+  const start = await holeMeta("stoppuhrStart");
+  clearInterval(uhrTimer);
+  const male = () => {
+    if (!start) { $("uhr").textContent = "0:00"; return; }
+    const s = Math.floor((Date.now() - new Date(start).getTime()) / 1000);
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sek = String(s % 60).padStart(2, "0");
+    $("uhr").textContent = h ? `${h}:${String(m).padStart(2, "0")}:${sek}` : `${m}:${sek}`;
+  };
+  male();
+  if (start) uhrTimer = setInterval(male, 1000);
+}
+
+function exportDaten() {
+  return Promise.all([alle("eintraege"), alle("meta")]).then(([eintraege, meta]) => ({
+    schema_version: 1, exportiert_am: new Date().toISOString(), eintraege, meta,
+  }));
+}
+function dateiName() {
+  const d = new Date(), p = (n) => String(n).padStart(2, "0");
+  return `ft-test-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.json`;
+}
+
+$("b-speichern").onclick = async () => {
+  const text = $("e-text").value.trim();
+  if (!text) { melde("Bitte etwas eintragen."); return; }
+  await tx("eintraege", "readwrite", (s) => s.put({ id: neueId(), text, erstellt_am: new Date().toISOString() }));
+  $("e-text").value = "";
+  melde("Gespeichert."); zeigeListe(); zeigeStatus();
+};
+$("e-text").addEventListener("keydown", (e) => { if (e.key === "Enter") $("b-speichern").click(); });
+
+$("b-persist").onclick = async () => {
+  if (!(navigator.storage && navigator.storage.persist)) { melde("Wird von diesem Browser nicht unterstützt."); return; }
+  const ok = await navigator.storage.persist();
+  melde(ok ? "Speicher ist jetzt dauerhaft." : "Browser hat abgelehnt.");
+  zeigeStatus();
+};
+
+$("b-status").onclick = async () => {
+  const zeilen = [...document.querySelectorAll("dl dt")].map((dt) => dt.textContent + ": " + dt.nextElementSibling.textContent);
+  zeilen.push($("s-export").textContent, "Gerät: " + navigator.userAgent, "Stand: " + fmt(new Date().toISOString()));
+  const text = zeilen.join("\n");
+  try { await navigator.clipboard.writeText(text); melde("Status kopiert."); }
+  catch (_) { prompt("Status zum Kopieren:", text); }
+};
+
+$("b-start").onclick = async () => {
+  if (await holeMeta("stoppuhrStart")) { melde("Läuft schon."); return; }
+  await setzeMeta("stoppuhrStart", new Date().toISOString()); zeigeUhr();
+};
+$("b-stopp").onclick = async () => {
+  const start = await holeMeta("stoppuhrStart");
+  if (!start) { melde("Stoppuhr läuft nicht."); return; }
+  const dauer = Math.round((Date.now() - new Date(start).getTime()) / 1000);
+  await tx("eintraege", "readwrite", (s) => s.put({
+    id: neueId(), text: `Stoppuhr: ${Math.floor(dauer / 60)} min ${dauer % 60} s (Start ${fmt(start)})`,
+    erstellt_am: new Date().toISOString() }));
+  await setzeMeta("stoppuhrStart", null);
+  zeigeUhr(); zeigeListe(); zeigeStatus(); melde("Dauer gespeichert.");
+};
+
+$("b-teilen").onclick = async () => {
+  const daten = await exportDaten();
+  const datei = new File([JSON.stringify(daten, null, 2)], dateiName(), { type: "application/json" });
+  if (navigator.canShare && navigator.canShare({ files: [datei] })) {
+    try {
+      await navigator.share({ files: [datei], title: "Fitness-Tagebuch Sicherung" });
+      await setzeMeta("letzterExport", new Date().toISOString()); zeigeStatus();
+    } catch (e) { if (e.name !== "AbortError") melde("Teilen fehlgeschlagen: " + e.message); }
+  } else {
+    melde("Teilen von Dateien geht hier nicht. Nimm \"Herunterladen\".");
+  }
+};
+$("b-laden").onclick = async () => {
+  const daten = await exportDaten();
+  const url = URL.createObjectURL(new Blob([JSON.stringify(daten, null, 2)], { type: "application/json" }));
+  const a = document.createElement("a"); a.href = url; a.download = dateiName();
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  await setzeMeta("letzterExport", new Date().toISOString()); zeigeStatus();
+};
+$("f-import").onchange = async (ev) => {
+  const datei = ev.target.files[0]; if (!datei) return;
+  try {
+    const daten = JSON.parse(await datei.text());
+    if (!Array.isArray(daten.eintraege)) throw new Error("keine Einträge gefunden");
+    const vorhanden = new Set((await alle("eintraege")).map((e) => e.id));
+    const neu = daten.eintraege.filter((e) => e.id && !vorhanden.has(e.id));
+    await tx("eintraege", "readwrite", (s) => neu.forEach((e) => s.put(e)));
+    melde(`${neu.length} neue Einträge importiert, ${daten.eintraege.length - neu.length} schon vorhanden.`);
+    zeigeListe(); zeigeStatus();
+  } catch (e) { melde("Import fehlgeschlagen: " + e.message); }
+  ev.target.value = "";
+};
+
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { zeigeUhr(); zeigeStatus(); } });
+
+(async () => {
+  db = await oeffneDb();
+  await zaehleStart();
+  if ("serviceWorker" in navigator) {
+    try { await navigator.serviceWorker.register("sw.js"); } catch (_) {}
+    navigator.serviceWorker.addEventListener("controllerchange", zeigeStatus);
+  }
+  await zeigeStatus(); await zeigeListe(); await zeigeUhr();
+})();
+</script>
+</body>
+</html>
